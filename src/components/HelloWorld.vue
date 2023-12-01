@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import * as THREE from "three";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
+import { TextGeometry } from "three/addons/geometries/TextGeometry.js";
+//@ts-expect-error
 import * as TWEEN from "@tweenjs/tween.js";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
-import { onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const bestMatchScene = ref<HTMLDivElement | null>(null);
 const sceneSizes = {
@@ -17,7 +20,7 @@ const startScene = () => {
 };
 
 const startRenderer = () => {
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(sceneSizes.width, sceneSizes.height);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -41,11 +44,11 @@ const startCamera = () => {
 };
 
 const startDirectionalLight = (scene: THREE.Scene) => {
-  const light = new THREE.DirectionalLight(0xffffff, 4);
-  light.position.set(0, 5, 0.2);
+  const light = new THREE.DirectionalLight(0xffffff, 2);
+  light.position.set(0, 10, 0.2);
   light.castShadow = true;
-  light.shadow.mapSize.width = 128;
-  light.shadow.mapSize.height = 128;
+  light.shadow.mapSize.width = 256;
+  light.shadow.mapSize.height = 256;
   light.shadow.camera.near = 0.5;
   light.shadow.camera.far = 25;
   light.shadow.camera.left = -10;
@@ -60,7 +63,36 @@ const startDirectionalLight = (scene: THREE.Scene) => {
   scene.add(ambientLight);
 };
 
+const createText = (text: string, size: number) => {
+  const textMesh = new THREE.Group();
+  const fontLoader = new FontLoader();
+
+  fontLoader.load("/fonts/OpenSansBold.json", (loadedFont) => {
+    const textMaterial = new THREE.MeshPhongMaterial({
+      color: 0x000,
+      specular: 0x444444,
+      shininess: 20,
+    });
+
+    const firstText = new TextGeometry(text, {
+      font: loadedFont,
+      size: size,
+      height: 1,
+      curveSegments: 10
+    });
+
+    firstText.center();
+
+    const tMesh = new THREE.Mesh(firstText, textMaterial);
+
+    textMesh.add(tMesh);
+  });
+
+  return textMesh
+}
+
 const addPodiumBase = (scene: THREE.Scene) => {
+  //
   const material = new THREE.MeshStandardMaterial({ color: 0x6e6e6e });
 
   const firstPlaceGeometry = new THREE.BoxGeometry(5, 1, 2);
@@ -69,17 +101,37 @@ const addPodiumBase = (scene: THREE.Scene) => {
   firstPlaceObject.receiveShadow = true;
   scene.add(firstPlaceObject);
 
+  const firstPlaceText = createText("Melhor Operação (75%)", 52)
+  firstPlaceText.scale.set(0.005, 0.005, 0.005);
+  firstPlaceText.rotation.y = 0.00001; // radiant
+  firstPlaceText.position.set(0, -2, 1);
+  scene.add(firstPlaceText);
+
   const secondPlaceGeometry = new THREE.BoxGeometry(4, 0.6, 2);
   const secondPlaceObject = new THREE.Mesh(secondPlaceGeometry, material);
-  secondPlaceObject.position.set(4, -2.2, 0);
+  secondPlaceObject.position.set(-4, -2.2, 0);
   secondPlaceObject.receiveShadow = true;
   scene.add(secondPlaceObject);
 
+  const secondPlaceText = createText("Segundo lugar (60%)", 40)
+  secondPlaceText.scale.set(0.005, 0.005, 0.005);
+  secondPlaceText.rotation.y = 0.00001; // radiant
+  secondPlaceText.position.set(-4.25, -2.22, 1);
+  scene.add(secondPlaceText);
+
   const thirdPlaceObject = new THREE.Mesh(secondPlaceGeometry, material);
-  thirdPlaceObject.position.set(-4, -2.2, 0);
+  thirdPlaceObject.position.set(4, -2.2, 0);
   thirdPlaceObject.receiveShadow = true;
   scene.add(thirdPlaceObject);
+
+  const thirdPlaceText = createText("Terceiro lugar (42%)", 40)
+  thirdPlaceText.scale.set(0.005, 0.005, 0.005);
+  thirdPlaceText.rotation.y = 0.00001; // radiant
+  thirdPlaceText.position.set(4.25, -2.22, 1);
+  scene.add(thirdPlaceText);
 };
+
+
 
 const createPenny = (imageUrl: string, radius: number) => {
   const pennyMaterials = [];
@@ -104,78 +156,91 @@ const createPenny = (imageUrl: string, radius: number) => {
   });
 
   return new THREE.Mesh(pennyGeometry, pennyMaterials);
-}
+};
 
-function startCanvas(canvas: HTMLDivElement) {
-  // instancia a cena
-  const scene = startScene();
+const showFirstPlace = (scene: THREE.Scene, penny: THREE.Mesh) => {
+  penny.position.set(0, 0.7, 0.3);
+  penny.rotateX(1.56);
+  penny.rotateY(1.56);
+  penny.castShadow = true;
+  scene.add(penny);
 
-  // instancia a camera
-  const camera = startCamera();
-
-  // instancia o renderer
-  const renderer = startRenderer();
-
-  // adiciona o canvas
-  canvas.appendChild(renderer.domElement);
-
-  // habilita os controles
-  const controls = new OrbitControls(camera, renderer.domElement);
-
-  // instancia a luz
-  startDirectionalLight(scene);
-
-  // adiciona o pódio na cena
-  addPodiumBase(scene);
-
-  // adiciona a medalha
-  const firstPenny = createPenny("/images/bancoInter.png", 1.5);
-
-  firstPenny.position.set(0, 0.7, 0.3);
-  firstPenny.rotateX(1.56);
-  firstPenny.rotateY(1.56);
-  firstPenny.castShadow = true;
-  scene.add(firstPenny);
-
-  const secondPenny = createPenny("/images/bancoItau.png", 1.2);
-  secondPenny.position.set(4, -0.5, 0.3);
-  secondPenny.rotateX(1.56);
-  secondPenny.rotateY(1.56);
-  secondPenny.castShadow = true;
-  scene.add(secondPenny);
-
-  const thirdPenny = createPenny("/images/bancoSantander.png", 1.2);
-  thirdPenny.position.set(-4, -0.5, 0.3);
-  thirdPenny.rotateX(1.56);
-  thirdPenny.rotateY(1.56);
-  thirdPenny.castShadow = true;
-  scene.add(thirdPenny);
-
-  // anima a medalha
-
-  const firstPennyStart = new TWEEN.Tween({
-    y: 0,
+  const animationStart = new TWEEN.Tween({
+    y: 10,
   })
     .to({ y: 0.5 }, 1000)
-    .onUpdate((coords) => {
-      firstPenny.position.y = coords.y;
+    .onUpdate((coords: { x: number; y: number }) => {
+      penny.position.y = coords.y;
     })
     .easing(TWEEN.Easing.Exponential.Out);
 
-  const firstPennyEnd = new TWEEN.Tween({
+  const animationMiddle = new TWEEN.Tween({
     y: 0.5,
   })
     .to({ y: 0 }, 1000)
-    .onUpdate((coords) => {
-      firstPenny.position.y = coords.y;
+    .onUpdate((coords: { x: number; y: number }) => {
+      penny.position.y = coords.y;
     })
     .easing(TWEEN.Easing.Exponential.In);
 
-  firstPennyStart.chain(firstPennyEnd);
-  firstPennyEnd.chain(firstPennyStart);
-  firstPennyStart.start();
+  const animationEnd = new TWEEN.Tween({
+    y: 0,
+  })
+    .to({ y: 0.5 }, 1000)
+    .onUpdate((coords: { x: number; y: number }) => {
+      penny.position.y = coords.y;
+    })
+    .easing(TWEEN.Easing.Exponential.Out);
 
-  // inicia a animação
+  animationStart.chain(animationMiddle);
+  animationMiddle.chain(animationEnd);
+  animationEnd.chain(animationMiddle);
+  animationStart.start();
+};
+
+const showSecondPlace = (
+  scene: THREE.Scene,
+  penny: THREE.Mesh,
+  position: { x: number; y: number; z: number }
+) => {
+  penny.position.set(position.x, position.y, position.z);
+  penny.rotateX(1.56);
+  penny.rotateY(1.56);
+  penny.castShadow = true;
+  scene.add(penny);
+
+  const animationStart = new TWEEN.Tween({
+    y: 6,
+  })
+    .to({ y: -0.5 }, 2000)
+    .onUpdate((coords: { x: number; y: number }) => {
+      penny.position.y = coords.y;
+    })
+    .easing(TWEEN.Easing.Exponential.Out)
+    .delay(500);
+
+  animationStart.start();
+};
+
+function startCanvas(canvas: HTMLDivElement) {
+  const scene = startScene();
+  const camera = startCamera();
+  const renderer = startRenderer();
+  const controls = new OrbitControls(camera, renderer.domElement);
+
+  canvas.appendChild(renderer.domElement);
+
+  startDirectionalLight(scene);
+  addPodiumBase(scene);
+
+  const firstPenny = createPenny("/images/bancoInter.png", 1.5);
+  showFirstPlace(scene, firstPenny);
+  const secondPenny = createPenny("/images/bancoItau.png", 1.2);
+  showSecondPlace(scene, secondPenny, { x: 4, y: 6, z: 0.3 });
+
+  const thirdPenny = createPenny("/images/bancoSantander.png", 1.2);
+  showSecondPlace(scene, thirdPenny, { x: -4, y: 6, z: 0.3 });
+
   function animate() {
     secondPenny.rotateX(0.01);
     thirdPenny.rotateX(-0.01);
@@ -185,6 +250,10 @@ function startCanvas(canvas: HTMLDivElement) {
     requestAnimationFrame(animate);
   }
   animate();
+
+  onBeforeUnmount(() => {
+    scene.clear();
+  });
 }
 
 onMounted(() => {
