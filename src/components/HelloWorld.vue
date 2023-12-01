@@ -37,7 +37,7 @@ const startCamera = () => {
   );
 
   camera.position.x = 0;
-  camera.position.y = 0.5;
+  camera.position.y = -0.5;
   camera.position.z = 6.5;
 
   return camera;
@@ -78,7 +78,7 @@ const createText = (text: string, size: number) => {
       font: loadedFont,
       size: size,
       height: 1,
-      curveSegments: 10
+      curveSegments: 10,
     });
 
     firstText.center();
@@ -88,8 +88,8 @@ const createText = (text: string, size: number) => {
     textMesh.add(tMesh);
   });
 
-  return textMesh
-}
+  return textMesh;
+};
 
 const addPodiumBase = (scene: THREE.Scene) => {
   //
@@ -101,7 +101,7 @@ const addPodiumBase = (scene: THREE.Scene) => {
   firstPlaceObject.receiveShadow = true;
   scene.add(firstPlaceObject);
 
-  const firstPlaceText = createText("Melhor Operação (75%)", 52)
+  const firstPlaceText = createText("Melhor Operação (75%)", 52);
   firstPlaceText.scale.set(0.005, 0.005, 0.005);
   firstPlaceText.rotation.y = 0.00001; // radiant
   firstPlaceText.position.set(0, -2, 1);
@@ -113,7 +113,7 @@ const addPodiumBase = (scene: THREE.Scene) => {
   secondPlaceObject.receiveShadow = true;
   scene.add(secondPlaceObject);
 
-  const secondPlaceText = createText("Segundo lugar (60%)", 40)
+  const secondPlaceText = createText("Segundo lugar (60%)", 40);
   secondPlaceText.scale.set(0.005, 0.005, 0.005);
   secondPlaceText.rotation.y = 0.00001; // radiant
   secondPlaceText.position.set(-4.25, -2.22, 1);
@@ -124,14 +124,12 @@ const addPodiumBase = (scene: THREE.Scene) => {
   thirdPlaceObject.receiveShadow = true;
   scene.add(thirdPlaceObject);
 
-  const thirdPlaceText = createText("Terceiro lugar (42%)", 40)
+  const thirdPlaceText = createText("Terceiro lugar (42%)", 40);
   thirdPlaceText.scale.set(0.005, 0.005, 0.005);
   thirdPlaceText.rotation.y = 0.00001; // radiant
   thirdPlaceText.position.set(4.25, -2.22, 1);
   scene.add(thirdPlaceText);
 };
-
-
 
 const createPenny = (imageUrl: string, radius: number) => {
   const pennyMaterials = [];
@@ -142,6 +140,8 @@ const createPenny = (imageUrl: string, radius: number) => {
 
   const headsLoader = new THREE.TextureLoader();
   headsLoader.load(imageUrl, (texture: THREE.Texture) => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.flipY = true;
     const materialTop = new THREE.MeshBasicMaterial({ map: texture });
     pennyMaterials.push(materialTop);
   });
@@ -222,7 +222,7 @@ const showSecondPlace = (
   animationStart.start();
 };
 
-function startCanvas(canvas: HTMLDivElement) {
+const startCanvas = (canvas: HTMLDivElement) => {
   const scene = startScene();
   const camera = startCamera();
   const renderer = startRenderer();
@@ -244,10 +244,10 @@ function startCanvas(canvas: HTMLDivElement) {
   function animate() {
     secondPenny.rotateX(0.01);
     thirdPenny.rotateX(-0.01);
-    TWEEN.update();
     controls.update();
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
+    TWEEN.update();
   }
   animate();
 
